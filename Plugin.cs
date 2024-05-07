@@ -12,7 +12,7 @@ namespace AsksvinImproved
     public class AsksvinImprovedPlugin : BaseUnityPlugin
     {
         internal const string ModName = "AsksvinImproved";
-        internal const string ModVersion = "1.0.0";
+        internal const string ModVersion = "1.0.2";
         internal const string Author = "Azumatt";
         private const string ModGUID = $"{Author}.{ModName}";
         private readonly Harmony _harmony = new(ModGUID);
@@ -22,17 +22,6 @@ namespace AsksvinImproved
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
             _harmony.PatchAll(assembly);
-        }
-    }
-
-    [HarmonyPatch(typeof(Player), nameof(Player.SetLocalPlayer))]
-    static class PlayerSetLocalPlayerPatch
-    {
-        public static bool TolerateFire;
-
-        static void Postfix(Player __instance)
-        {
-            TolerateFire = __instance.m_tolerateFire;
         }
     }
 
@@ -49,7 +38,6 @@ namespace AsksvinImproved
 #endif
             if (Utils.GetPrefabName(shipControl.GetControlledComponent().gameObject.name) == "Asksvin")
             {
-                __instance.m_tolerateFire = true;
                 RidingAsksvin = true;
                 RidingHumanoid = shipControl.GetControlledComponent().transform.GetComponentInParent<Humanoid>();
             }
@@ -66,7 +54,6 @@ namespace AsksvinImproved
                 // Ensure dismount if the mount dies
                 PlayerStartDoodadControlPatch.RidingAsksvin = false;
                 PlayerStartDoodadControlPatch.RidingHumanoid = null!;
-                __instance.m_tolerateFire = PlayerSetLocalPlayerPatch.TolerateFire;
                 return true;
             }
 
@@ -103,7 +90,6 @@ namespace AsksvinImproved
         {
             if (__instance.m_doodadController == null || !__instance.m_doodadController.IsValid() || !PlayerStartDoodadControlPatch.RidingAsksvin)
                 return;
-            __instance.m_tolerateFire = true;
 
             // Check if the mount is dead
             if (PlayerStartDoodadControlPatch.RidingHumanoid?.GetHealth() <= 0)
@@ -168,7 +154,7 @@ namespace AsksvinImproved
                 PlayerStartDoodadControlPatch.RidingHumanoid.EquipItem(weapon);
                 PlayerStartDoodadControlPatch.RidingHumanoid.StartAttack(null, false);
             }
-            
+
             ProcessInput(KeyCode.Mouse0, 0); // Left click
             ProcessInput(KeyCode.Mouse1, 1); // Right click
             ProcessInput(KeyCode.Mouse2, 2); // Middle click
