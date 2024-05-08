@@ -12,7 +12,7 @@ namespace AsksvinImproved
     public class AsksvinImprovedPlugin : BaseUnityPlugin
     {
         internal const string ModName = "AsksvinImproved";
-        internal const string ModVersion = "1.0.2";
+        internal const string ModVersion = "1.0.3";
         internal const string Author = "Azumatt";
         private const string ModGUID = $"{Author}.{ModName}";
         private readonly Harmony _harmony = new(ModGUID);
@@ -141,9 +141,12 @@ namespace AsksvinImproved
 
         public static void HandleInput(this Player player)
         {
-            void ProcessInput(KeyCode key, int weaponIndex)
+            void ProcessInput(KeyCode key, int weaponIndex, string controllerButton = "")
             {
-                if (!PlayerStartDoodadControlPatch.RidingHumanoid || !Input.GetKeyDown(key) || Menu.IsVisible() || !player.TakeInput()) return;
+                bool buttonDown = false;
+                // Check for Gamepad input not keyboard
+                buttonDown = ZInput.IsGamepadActive() ? ZInput.GetButtonDown(controllerButton) : Input.GetKeyDown(key);
+                if (!PlayerStartDoodadControlPatch.RidingHumanoid || !buttonDown || Menu.IsVisible() || !player.TakeInput()) return;
                 if (PlayerStartDoodadControlPatch.RidingHumanoid.InAttack())
                     return;
 
@@ -155,9 +158,9 @@ namespace AsksvinImproved
                 PlayerStartDoodadControlPatch.RidingHumanoid.StartAttack(null, false);
             }
 
-            ProcessInput(KeyCode.Mouse0, 0); // Left click
-            ProcessInput(KeyCode.Mouse1, 1); // Right click
-            ProcessInput(KeyCode.Mouse2, 2); // Middle click
+            ProcessInput(KeyCode.Mouse0, 0, "JoyAttack"); // Left click or Right Bumper
+            ProcessInput(KeyCode.Mouse1, 1, "JoyBlock"); // Right click or Left Bumper
+            ProcessInput(KeyCode.Mouse2, 2, "JoySecondaryAttack"); // Middle click or Right Trigger
         }
     }
 }
