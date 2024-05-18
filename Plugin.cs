@@ -12,7 +12,7 @@ namespace AsksvinImproved
     public class AsksvinImprovedPlugin : BaseUnityPlugin
     {
         internal const string ModName = "AsksvinImproved";
-        internal const string ModVersion = "1.0.4";
+        internal const string ModVersion = "1.0.5";
         internal const string Author = "Azumatt";
         private const string ModGUID = $"{Author}.{ModName}";
         private readonly Harmony _harmony = new(ModGUID);
@@ -99,7 +99,7 @@ namespace AsksvinImproved
             }
 
             // Detect and handle jump input specifically for dismounting
-            if (Input.GetKeyDown(KeyCode.Space) || ZInput.GetButtonDown("JoyJump"))
+            if (ZInput.GetButton("Jump") || ZInput.GetButtonDown("JoyJump"))
             {
                 __instance.CustomAttachStop();
                 return;
