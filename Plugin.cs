@@ -155,6 +155,16 @@ namespace AsksvinImproved
                 if (items.Count <= weaponIndex) return;
                 ItemDrop.ItemData weapon = items[weaponIndex];
                 PlayerStartDoodadControlPatch.RidingHumanoid.EquipItem(weapon);
+                float stamtoUse = weapon.m_shared.m_attack.m_attackStamina;
+                Sadle? doodadController = player.GetDoodadController() as Sadle;
+                if (doodadController == null) return;
+                if (weapon.m_shared.m_attack.m_attackStamina <= 0f)
+                {
+                    stamtoUse = doodadController.GetMaxStamina() * 0.05f;
+                }
+
+                if (!doodadController.HaveStamina(stamtoUse)) return;
+                doodadController.UseStamina(stamtoUse);
                 PlayerStartDoodadControlPatch.RidingHumanoid.StartAttack(null, false);
             }
 
