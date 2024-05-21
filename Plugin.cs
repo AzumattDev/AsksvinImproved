@@ -12,7 +12,7 @@ namespace AsksvinImproved
     public class AsksvinImprovedPlugin : BaseUnityPlugin
     {
         internal const string ModName = "AsksvinImproved";
-        internal const string ModVersion = "1.0.5";
+        internal const string ModVersion = "1.0.6";
         internal const string Author = "Azumatt";
         private const string ModGUID = $"{Author}.{ModName}";
         private readonly Harmony _harmony = new(ModGUID);
