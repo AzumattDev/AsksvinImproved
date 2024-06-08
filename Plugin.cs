@@ -12,12 +12,13 @@ namespace AsksvinImproved
     public class AsksvinImprovedPlugin : BaseUnityPlugin
     {
         internal const string ModName = "AsksvinImproved";
-        internal const string ModVersion = "1.0.8";
+        internal const string ModVersion = "1.0.9";
         internal const string Author = "Azumatt";
         private const string ModGUID = $"{Author}.{ModName}";
         private readonly Harmony _harmony = new(ModGUID);
         public static readonly ManualLogSource AsksvinImprovedLogger = BepInEx.Logging.Logger.CreateLogSource(ModName);
         public static Sprite? AsksvinSprite = null;
+        public const string Fab = "TrophyAsksvin";
 
         public void Awake()
         {
@@ -31,7 +32,10 @@ namespace AsksvinImproved
     {
         static void Postfix(ObjectDB __instance)
         {
-            AsksvinImprovedPlugin.AsksvinSprite = __instance.GetItemPrefab("TrophyAsksvin").GetComponent<ItemDrop>().m_itemData.m_shared.m_icons[0];
+            if (__instance.GetItemPrefab(AsksvinImprovedPlugin.Fab) == null)
+                return;
+
+            AsksvinImprovedPlugin.AsksvinSprite = __instance.GetItemPrefab(AsksvinImprovedPlugin.Fab).GetComponent<ItemDrop>().m_itemData.m_shared.m_icons[0];
         }
     }
 
@@ -58,8 +62,9 @@ namespace AsksvinImproved
                      where !flag
                      select character)
             {
-                var pin = __instance.AddPin(character.GetCenterPoint(), Minimap.PinType.None, $"$hud_tame {character.GetHoverName()} [Health: {character.GetHealth()}]", false, false);
-                pin.m_icon = AsksvinImprovedPlugin.AsksvinSprite;
+                Minimap.PinData? pin = __instance.AddPin(character.GetCenterPoint(), Minimap.PinType.None, $"$hud_tame {character.GetHoverName()} [Health: {character.GetHealth()}]", false, false);
+                if (AsksvinImprovedPlugin.AsksvinSprite != null)
+                    pin.m_icon = AsksvinImprovedPlugin.AsksvinSprite;
                 Sadle? sadle = null;
                 EnemyHud.instance.UpdateHuds(Player.m_localPlayer, sadle, Time.deltaTime);
             }
