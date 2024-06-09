@@ -1,5 +1,6 @@
 | `Version` | `Update Notes`                                                                                                                                                                                                    |
 |-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1.0.10    | - Fix an issue where the player couldn't attack after dismount.<br/> - Can now dismount with the interact key again.                                                                                              |
 | 1.0.9     | - Fix an NRE                                                                                                                                                                                                      |
 | 1.0.8     | - Fix an issue where the saddle couldn't be removed after dismounting.  <br/> - Make the minimap icon the Asksvin's                                                                                               |
 | 1.0.7     | - If you're close to a recently dismounted Askvin, they will display as a pin on your minimap. Pin will move to a new Askvin, should you mount another. Pins are not persistent and do not save between sessions. |

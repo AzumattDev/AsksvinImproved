@@ -12,7 +12,7 @@ namespace AsksvinImproved
     public class AsksvinImprovedPlugin : BaseUnityPlugin
     {
         internal const string ModName = "AsksvinImproved";
-        internal const string ModVersion = "1.0.9";
+        internal const string ModVersion = "1.0.10";
         internal const string Author = "Azumatt";
         private const string ModGUID = $"{Author}.{ModName}";
         private readonly Harmony _harmony = new(ModGUID);
@@ -24,6 +24,13 @@ namespace AsksvinImproved
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
             _harmony.PatchAll(assembly);
+        }
+
+        public static void LogIfDebug(string message)
+        {
+#if DEBUG
+            ILoxYouLogger.LogDebug(message);
+#endif
         }
     }
 
@@ -108,14 +115,13 @@ namespace AsksvinImproved
 
         static void Postfix(Player __instance, IDoodadController shipControl)
         {
-#if DEBUG
-            AsksvinImprovedPlugin.AsksvinImprovedLogger.LogDebug($"PlayerIsRidingPatch: They are on {Utils.GetPrefabName(__instance.m_doodadController.GetControlledComponent().gameObject.name)}");
-#endif
+            AsksvinImprovedPlugin.LogIfDebug($"PlayerIsRidingPatch: They are on {Utils.GetPrefabName(__instance.m_doodadController.GetControlledComponent().gameObject.name)}");
             if (Utils.GetPrefabName(shipControl.GetControlledComponent().gameObject.name) == "Asksvin")
             {
                 RidingAsksvin = true;
                 RidingHumanoid = shipControl.GetControlledComponent().transform.GetComponentInParent<Humanoid>();
                 LastHumanoidZDOID = RidingHumanoid.GetZDOID();
+                AsksvinImprovedPlugin.LogIfDebug($"Player is riding a Lox. Humanoid ZDOID: {LastHumanoidZDOID}");
             }
         }
     }
@@ -125,16 +131,20 @@ namespace AsksvinImproved
     {
         static bool Prefix(Player __instance)
         {
+            AsksvinImprovedPlugin.LogIfDebug("PlayerStopDoodadControlPatch: Attempting to stop doodad control.");
             if (__instance.m_doodadController == null || !__instance.m_doodadController.IsValid())
             {
                 // Ensure dismount if the mount dies
+                AsksvinImprovedPlugin.LogIfDebug("PlayerStopDoodadControlPatch: Doodad controller is invalid or null.");
                 PlayerStartDoodadControlPatch.RidingAsksvin = false;
                 PlayerStartDoodadControlPatch.RidingHumanoid = null!;
                 return true;
             }
 
 
-            return !PlayerStartDoodadControlPatch.RidingAsksvin;
+            if (PlayerStartDoodadControlPatch.RidingAsksvin) return false;
+            AsksvinImprovedPlugin.LogIfDebug("PlayerStopDoodadControlPatch: Player is not riding a Lox.");
+            return true;
         }
     }
 
@@ -143,8 +153,10 @@ namespace AsksvinImproved
     {
         static bool Prefix(Humanoid __instance)
         {
+            AsksvinImprovedPlugin.LogIfDebug($"HumanoidStartAttackPatch: Humanoid {__instance.GetHoverName()} attempting to start attack.");
             if (__instance != Player.m_localPlayer) return true;
-            return !PlayerStartDoodadControlPatch.RidingAsksvin;
+            AsksvinImprovedPlugin.LogIfDebug($"HumanoidStartAttackPatch: Player is {Player.m_localPlayer.GetHoverName()} and riding Lox: {PlayerStartDoodadControlPatch.RidingAsksvin}");
+            return !PlayerStartDoodadControlPatch.RidingAsksvin || Player.m_localPlayer.m_doodadController == null;
         }
     }
 
@@ -154,6 +166,7 @@ namespace AsksvinImproved
     {
         static bool Prefix(Player __instance)
         {
+            AsksvinImprovedPlugin.LogIfDebug($"PlayerAttachStopPatch: Player is attempting to attach stop. Riding Lox: {PlayerStartDoodadControlPatch.RidingAsksvin}");
             return !PlayerStartDoodadControlPatch.RidingAsksvin;
         }
     }
@@ -170,13 +183,16 @@ namespace AsksvinImproved
             // Check if the mount is dead
             if (PlayerStartDoodadControlPatch.RidingHumanoid?.GetHealth() <= 0)
             {
+                AsksvinImprovedPlugin.LogIfDebug("PlayerUpdateDoodadControlsPatch: Mount is dead, stopping control.");
+
                 __instance.CustomAttachStop();
                 return;
             }
 
-            // Detect and handle jump input specifically for dismounting
-            if (ZInput.GetButton("Jump") || ZInput.GetButtonDown("JoyJump"))
+            // Detect and handle jump/interact input specifically for dismounting
+            if (ZInput.GetButton("Jump") || ZInput.GetButtonDown("JoyJump") || ((ZInput.GetButtonDown("Use") || ZInput.GetButtonDown("JoyUse")) && !Hud.InRadial() && __instance.m_hovering?.GetComponent<Sadle>() == null))
             {
+                AsksvinImprovedPlugin.LogIfDebug("PlayerUpdateDoodadControlsPatch: Jump button pressed, stopping control.");
                 __instance.CustomAttachStop();
                 return;
             }
@@ -211,12 +227,10 @@ namespace AsksvinImproved
             p.m_zanim.SetBool(p.m_attachAnimation, false);
             p.m_nview.GetZDO().Set(ZDOVars.s_inBed, false);
             p.ResetCloth();
-            p.m_doodadController.OnUseStop(p);
             p.StopDoodadControl();
-            if (p.m_doodadController != null)
-            {
-                p.m_doodadController = null;
-            }
+            p.m_doodadController = null;
+            PlayerStartDoodadControlPatch.RidingAsksvin = false;
+            PlayerStartDoodadControlPatch.RidingHumanoid = null!;
         }
 
         public static void HandleInput(this Player player)
