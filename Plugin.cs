@@ -56,18 +56,18 @@ namespace AsksvinImproved
             List<Character> guysList =
                 (from hud
                         in EnemyHud.instance.m_huds.Values
-                    where hud.m_character != null
-                          && hud.m_character.IsTamed()
-                          && hud.m_character.GetZDOID() == PlayerStartDoodadControlPatch.LastHumanoidZDOID
-                    select hud.m_character
+                 where hud.m_character != null
+                       && hud.m_character.IsTamed()
+                       && hud.m_character.GetZDOID() == PlayerStartDoodadControlPatch.LastHumanoidZDOID
+                 select hud.m_character
                 ).ToList();
             //Add minimap pins if they haven't been added already.
             foreach (Character character
                      in from character in guysList
-                     where character is not Player
-                     let flag = __instance.m_pins.Any(pin => pin.m_name.Equals($"$hud_tame {character.GetHoverName()} [Health: {character.GetHealth()}]"))
-                     where !flag
-                     select character)
+                        where character is not Player
+                        let flag = __instance.m_pins.Any(pin => pin.m_name.Equals($"$hud_tame {character.GetHoverName()} [Health: {character.GetHealth()}]"))
+                        where !flag
+                        select character)
             {
                 Minimap.PinData? pin = __instance.AddPin(character.GetCenterPoint(), Minimap.PinType.None, $"$hud_tame {character.GetHoverName()} [Health: {character.GetHealth()}]", false, false);
                 if (AsksvinImprovedPlugin.AsksvinSprite != null)
@@ -85,7 +85,6 @@ namespace AsksvinImproved
                 bool flag = false;
                 foreach (Character character in guysList.Where(character => pin.m_name.Equals($"$hud_tame {character.GetHoverName()} [Health: {character.GetHealth()}]")))
                 {
-                    //AsksvinImprovedPlugin.AsksvinImprovedLogger.LogDebug($"$hud_tame {character.GetHoverName()} [Health: {character.GetHealth()}]");
                     pin.m_pos.x = character.GetCenterPoint().x;
                     pin.m_pos.y = character.GetCenterPoint().y;
                     pin.m_pos.z = character.GetCenterPoint().z;
@@ -97,7 +96,7 @@ namespace AsksvinImproved
                 {
                     if (pin.m_icon.Equals(AsksvinImprovedPlugin.AsksvinSprite))
                     {
-                        AsksvinImprovedPlugin.AsksvinImprovedLogger.LogDebug("pin to remove: "+pin.m_name + "::" + pin.m_icon + "::" + pin.m_iconElement);
+                        AsksvinImprovedPlugin.AsksvinImprovedLogger.LogDebug("pin to remove: " + pin.m_name + "::" + pin.m_icon + "::" + pin.m_iconElement);
                         removePins.Add(pin);
                     }
                 }
@@ -138,11 +137,6 @@ namespace AsksvinImproved
         static bool Prefix(Player __instance)
         {
             AsksvinImprovedPlugin.LogIfDebug("PlayerStopDoodadControlPatch: Attempting to stop doodad control.");
-            if ((PlayerStartDoodadControlPatch.RidingAsksvin) && (PlayerStartDoodadControlPatch.RidingHumanoid.InAttack()) && (PlayerStartDoodadControlPatch.RidingHumanoid?.GetHealth() > 0)) {
-
-                AsksvinImprovedPlugin.LogIfDebug("PlayerStopDoodadControlPatch: Attempt to stop doodad control aborted, mount alive and attacking.");
-                return false;
-            }
             if (__instance.m_doodadController == null || !__instance.m_doodadController.IsValid())
             {
                 // Ensure dismount if the mount dies
@@ -153,10 +147,7 @@ namespace AsksvinImproved
             }
 
 
-            if (PlayerStartDoodadControlPatch.RidingAsksvin) {
-                __instance.m_doodadController.OnUseStop(__instance);//this was missing
-                return false;
-            }
+            if (PlayerStartDoodadControlPatch.RidingAsksvin) return false;
             AsksvinImprovedPlugin.LogIfDebug("PlayerStopDoodadControlPatch: Player is not riding an Asksvin.");
             return true;
         }
@@ -180,8 +171,6 @@ namespace AsksvinImproved
     {
         static bool Prefix(Player __instance)
         {
-            if ((PlayerStartDoodadControlPatch.RidingAsksvin) && (PlayerStartDoodadControlPatch.RidingHumanoid.InAttack())&&(PlayerStartDoodadControlPatch.RidingHumanoid?.GetHealth() > 0))
-                return false;
             AsksvinImprovedPlugin.LogIfDebug($"PlayerAttachStopPatch: Player is attempting to attach stop. Riding Asksvin: {PlayerStartDoodadControlPatch.RidingAsksvin}");
             return !PlayerStartDoodadControlPatch.RidingAsksvin;
         }
@@ -243,9 +232,9 @@ namespace AsksvinImproved
             p.m_zanim.SetBool(p.m_attachAnimation, false);
             p.m_nview.GetZDO().Set(ZDOVars.s_inBed, false);
             p.ResetCloth();
+            PlayerStartDoodadControlPatch.RidingAsksvin = false;//must be set to false before StopDoodadControl or the Prefix patch will cause the original function to not fire.
             p.StopDoodadControl();
-            p.m_doodadController = null;
-            PlayerStartDoodadControlPatch.RidingAsksvin = false;
+            //p.m_doodadController = null;//shouldnt be necessary, is covered in StopDoodadControl
             PlayerStartDoodadControlPatch.RidingHumanoid = null!;
         }
 
