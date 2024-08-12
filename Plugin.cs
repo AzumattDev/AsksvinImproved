@@ -12,13 +12,14 @@ namespace AsksvinImproved
     public class AsksvinImprovedPlugin : BaseUnityPlugin
     {
         internal const string ModName = "AsksvinImproved";
-        internal const string ModVersion = "1.0.10";
+        internal const string ModVersion = "1.0.11";
         internal const string Author = "Azumatt";
         private const string ModGUID = $"{Author}.{ModName}";
         private readonly Harmony _harmony = new(ModGUID);
         public static readonly ManualLogSource AsksvinImprovedLogger = BepInEx.Logging.Logger.CreateLogSource(ModName);
         public static Sprite? AsksvinSprite = null;
-        public const string Fab = "TrophyAsksvin";
+        public const string TrophyFab = "TrophyAsksvin";
+        public const string Fab = "Asksvin";
 
         public void Awake()
         {
@@ -39,10 +40,10 @@ namespace AsksvinImproved
     {
         static void Postfix(ObjectDB __instance)
         {
-            if (__instance.GetItemPrefab(AsksvinImprovedPlugin.Fab) == null)
+            if (__instance.GetItemPrefab(AsksvinImprovedPlugin.TrophyFab) == null)
                 return;
 
-            AsksvinImprovedPlugin.AsksvinSprite = __instance.GetItemPrefab(AsksvinImprovedPlugin.Fab).GetComponent<ItemDrop>().m_itemData.m_shared.m_icons[0];
+            AsksvinImprovedPlugin.AsksvinSprite = __instance.GetItemPrefab(AsksvinImprovedPlugin.TrophyFab).GetComponent<ItemDrop>().m_itemData.m_shared.m_icons[0];
         }
     }
 
@@ -56,18 +57,18 @@ namespace AsksvinImproved
             List<Character> guysList =
                 (from hud
                         in EnemyHud.instance.m_huds.Values
-                 where hud.m_character != null
-                       && hud.m_character.IsTamed()
-                       && hud.m_character.GetZDOID() == PlayerStartDoodadControlPatch.LastHumanoidZDOID
-                 select hud.m_character
+                    where hud.m_character != null
+                          && hud.m_character.IsTamed()
+                          && hud.m_character.GetZDOID() == PlayerStartDoodadControlPatch.LastHumanoidZDOID
+                    select hud.m_character
                 ).ToList();
             //Add minimap pins if they haven't been added already.
             foreach (Character character
                      in from character in guysList
-                        where character is not Player
-                        let flag = __instance.m_pins.Any(pin => pin.m_name.Equals($"$hud_tame {character.GetHoverName()} [Health: {character.GetHealth()}]"))
-                        where !flag
-                        select character)
+                     where character is not Player
+                     let flag = __instance.m_pins.Any(pin => pin.m_name.Equals($"$hud_tame {character.GetHoverName()} [Health: {character.GetHealth()}]"))
+                     where !flag
+                     select character)
             {
                 Minimap.PinData? pin = __instance.AddPin(character.GetCenterPoint(), Minimap.PinType.None, $"$hud_tame {character.GetHoverName()} [Health: {character.GetHealth()}]", false, false);
                 if (AsksvinImprovedPlugin.AsksvinSprite != null)
@@ -96,17 +97,21 @@ namespace AsksvinImproved
                 {
                     if (pin.m_icon.Equals(AsksvinImprovedPlugin.AsksvinSprite))
                     {
-                        AsksvinImprovedPlugin.AsksvinImprovedLogger.LogDebug("pin to remove: " + pin.m_name + "::" + pin.m_icon + "::" + pin.m_iconElement);
+                        AsksvinImprovedPlugin.LogIfDebug("pin to remove: " + pin.m_name + "::" + pin.m_icon + "::" + pin.m_iconElement);
                         removePins.Add(pin);
                     }
                 }
             }
 
-            if (removePins.Count > 0) { AsksvinImprovedPlugin.AsksvinImprovedLogger.LogDebug("number of pins to remove: " + removePins.Count); }
+            if (removePins.Count > 0)
+            {
+                AsksvinImprovedPlugin.LogIfDebug("number of pins to remove: " + removePins.Count);
+            }
+
             foreach (Minimap.PinData pin in removePins)
             {
                 __instance.RemovePin(pin);
-                AsksvinImprovedPlugin.AsksvinImprovedLogger.LogDebug("removing pin for " + pin.m_name);
+                AsksvinImprovedPlugin.LogIfDebug("removing pin for " + pin.m_name);
             }
         }
     }
@@ -206,6 +211,17 @@ namespace AsksvinImproved
         }
     }
 
+    [HarmonyPatch(typeof(ZNetScene), nameof(ZNetScene.Awake))]
+    static class MakeAsksvinCommandable
+    {
+        static void Postfix(ZNetScene __instance)
+        {
+            if (__instance.GetPrefab(AsksvinImprovedPlugin.Fab) == null)
+                return;
+            __instance.GetPrefab(AsksvinImprovedPlugin.Fab).GetComponent<Tameable>().m_commandable = true;
+        }
+    }
+
     public static class PlayerExtensions
     {
         public static void CustomAttachStop(this Player p)
@@ -232,7 +248,7 @@ namespace AsksvinImproved
             p.m_zanim.SetBool(p.m_attachAnimation, false);
             p.m_nview.GetZDO().Set(ZDOVars.s_inBed, false);
             p.ResetCloth();
-            PlayerStartDoodadControlPatch.RidingAsksvin = false;//must be set to false before StopDoodadControl or the Prefix patch will cause the original function to not fire.
+            PlayerStartDoodadControlPatch.RidingAsksvin = false; //must be set to false before StopDoodadControl or the Prefix patch will cause the original function to not fire.
             p.StopDoodadControl();
             //p.m_doodadController = null;//shouldnt be necessary, is covered in StopDoodadControl
             PlayerStartDoodadControlPatch.RidingHumanoid = null!;
