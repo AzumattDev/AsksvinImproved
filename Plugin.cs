@@ -29,7 +29,7 @@ namespace AsksvinImproved
         public static void LogIfDebug(string message)
         {
 #if DEBUG
-            ILoxYouLogger.LogDebug(message);
+            AsksvinImprovedLogger.LogDebug(message);
 #endif
         }
     }
@@ -56,18 +56,18 @@ namespace AsksvinImproved
             List<Character> guysList =
                 (from hud
                         in EnemyHud.instance.m_huds.Values
-                    where hud.m_character != null
-                          && hud.m_character.IsTamed()
-                          && hud.m_character.GetZDOID() == PlayerStartDoodadControlPatch.LastHumanoidZDOID
-                    select hud.m_character
+                 where hud.m_character != null
+                       && hud.m_character.IsTamed()
+                       && hud.m_character.GetZDOID() == PlayerStartDoodadControlPatch.LastHumanoidZDOID
+                 select hud.m_character
                 ).ToList();
             //Add minimap pins if they haven't been added already.
             foreach (Character character
                      in from character in guysList
-                     where character is not Player
-                     let flag = __instance.m_pins.Any(pin => pin.m_name.Equals($"$hud_tame {character.GetHoverName()} [Health: {character.GetHealth()}]"))
-                     where !flag
-                     select character)
+                        where character is not Player
+                        let flag = __instance.m_pins.Any(pin => pin.m_name.Equals($"$hud_tame {character.GetHoverName()} [Health: {character.GetHealth()}]"))
+                        where !flag
+                        select character)
             {
                 Minimap.PinData? pin = __instance.AddPin(character.GetCenterPoint(), Minimap.PinType.None, $"$hud_tame {character.GetHoverName()} [Health: {character.GetHealth()}]", false, false);
                 if (AsksvinImprovedPlugin.AsksvinSprite != null)
@@ -94,10 +94,15 @@ namespace AsksvinImproved
 
                 if (!flag)
                 {
-                    removePins.Add(pin);
+                    if (pin.m_icon.Equals(AsksvinImprovedPlugin.AsksvinSprite))
+                    {
+                        AsksvinImprovedPlugin.AsksvinImprovedLogger.LogDebug("pin to remove: " + pin.m_name + "::" + pin.m_icon + "::" + pin.m_iconElement);
+                        removePins.Add(pin);
+                    }
                 }
             }
 
+            if (removePins.Count > 0) { AsksvinImprovedPlugin.AsksvinImprovedLogger.LogDebug("number of pins to remove: " + removePins.Count); }
             foreach (Minimap.PinData pin in removePins)
             {
                 __instance.RemovePin(pin);
@@ -121,7 +126,7 @@ namespace AsksvinImproved
                 RidingAsksvin = true;
                 RidingHumanoid = shipControl.GetControlledComponent().transform.GetComponentInParent<Humanoid>();
                 LastHumanoidZDOID = RidingHumanoid.GetZDOID();
-                AsksvinImprovedPlugin.LogIfDebug($"Player is riding a Lox. Humanoid ZDOID: {LastHumanoidZDOID}");
+                AsksvinImprovedPlugin.LogIfDebug($"Player is riding an Asksvin. Humanoid ZDOID: {LastHumanoidZDOID}");
             }
         }
     }
@@ -143,7 +148,7 @@ namespace AsksvinImproved
 
 
             if (PlayerStartDoodadControlPatch.RidingAsksvin) return false;
-            AsksvinImprovedPlugin.LogIfDebug("PlayerStopDoodadControlPatch: Player is not riding a Lox.");
+            AsksvinImprovedPlugin.LogIfDebug("PlayerStopDoodadControlPatch: Player is not riding an Asksvin.");
             return true;
         }
     }
@@ -155,7 +160,7 @@ namespace AsksvinImproved
         {
             AsksvinImprovedPlugin.LogIfDebug($"HumanoidStartAttackPatch: Humanoid {__instance.GetHoverName()} attempting to start attack.");
             if (__instance != Player.m_localPlayer) return true;
-            AsksvinImprovedPlugin.LogIfDebug($"HumanoidStartAttackPatch: Player is {Player.m_localPlayer.GetHoverName()} and riding Lox: {PlayerStartDoodadControlPatch.RidingAsksvin}");
+            AsksvinImprovedPlugin.LogIfDebug($"HumanoidStartAttackPatch: Player is {Player.m_localPlayer.GetHoverName()} and riding Asksvin: {PlayerStartDoodadControlPatch.RidingAsksvin}");
             return !PlayerStartDoodadControlPatch.RidingAsksvin || Player.m_localPlayer.m_doodadController == null;
         }
     }
@@ -166,7 +171,7 @@ namespace AsksvinImproved
     {
         static bool Prefix(Player __instance)
         {
-            AsksvinImprovedPlugin.LogIfDebug($"PlayerAttachStopPatch: Player is attempting to attach stop. Riding Lox: {PlayerStartDoodadControlPatch.RidingAsksvin}");
+            AsksvinImprovedPlugin.LogIfDebug($"PlayerAttachStopPatch: Player is attempting to attach stop. Riding Asksvin: {PlayerStartDoodadControlPatch.RidingAsksvin}");
             return !PlayerStartDoodadControlPatch.RidingAsksvin;
         }
     }
@@ -227,9 +232,9 @@ namespace AsksvinImproved
             p.m_zanim.SetBool(p.m_attachAnimation, false);
             p.m_nview.GetZDO().Set(ZDOVars.s_inBed, false);
             p.ResetCloth();
+            PlayerStartDoodadControlPatch.RidingAsksvin = false;//must be set to false before StopDoodadControl or the Prefix patch will cause the original function to not fire.
             p.StopDoodadControl();
-            p.m_doodadController = null;
-            PlayerStartDoodadControlPatch.RidingAsksvin = false;
+            //p.m_doodadController = null;//shouldnt be necessary, is covered in StopDoodadControl
             PlayerStartDoodadControlPatch.RidingHumanoid = null!;
         }
 
